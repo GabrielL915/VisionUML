@@ -7,7 +7,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </main>
 `;
 
-// Função de throttle
 function throttle(func: Function, limit: number) {
   let lastFunc: number;
   let lastRan: number;
@@ -28,7 +27,6 @@ function throttle(func: Function, limit: number) {
   };
 }
 
-// Função de debounce
 function debounce(func: Function, delay: number) {
   let timer: number;
   return function (...args: any[]) {
@@ -46,8 +44,8 @@ if (canvasContainer) {
     height: window.innerHeight,
   });
 
-  const staticLayer = new Konva.Layer(); // Camada para elementos estáticos
-  const dynamicLayer = new Konva.Layer(); // Camada para elementos dinâmicos
+  const staticLayer = new Konva.Layer();
+  const dynamicLayer = new Konva.Layer();
   stage.add(staticLayer);
   stage.add(dynamicLayer);
 
@@ -66,9 +64,9 @@ if (canvasContainer) {
   // Limita re-renderizações ao arrastar
   square.on('dragmove', throttle(() => {
     dynamicLayer.batchDraw();
-  }, 16)); // Atualiza apenas a camada dinâmica
+  }, 16));
 
-  // Função de Zoom e Pan com throttle aplicado
+  // Zoom e Pan com throttle aplicado
   const scaleBy = 1.02;
   let scale = 1;
 
@@ -98,11 +96,31 @@ if (canvasContainer) {
 
     stage.position(newPos);
     stage.batchDraw();
+
+    // Lazy rendering
+    const visibleRect = {
+      x: -newPos.x / scale,
+      y: -newPos.y / scale,
+      width: stage.width() / scale,
+      height: stage.height() / scale,
+    };
+
+    dynamicLayer.children.forEach((node) => {
+      const nodeBox = node.getClientRect();
+      const isVisible =
+        nodeBox.x + nodeBox.width > visibleRect.x &&
+        nodeBox.x < visibleRect.x + visibleRect.width &&
+        nodeBox.y + nodeBox.height > visibleRect.y &&
+        nodeBox.y < visibleRect.y + visibleRect.height;
+
+      node.visible(isVisible);
+    });
+
+    dynamicLayer.batchDraw();
   }, 16); // Aplica throttle com limite de 16ms
 
   stage.on('wheel', handleZoom);
 
-  // Redimensionamento da janela com debounce aplicado
   const handleResize = debounce(() => {
     stage.width(window.innerWidth);
     stage.height(window.innerHeight);
