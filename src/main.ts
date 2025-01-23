@@ -11,7 +11,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 function throttle(func: Function, limit: number) {
   let lastFunc: number;
   let lastRan: number;
-
   return function (...args: any[]) {
     const context = this;
     if (!lastRan) {
@@ -32,7 +31,6 @@ function throttle(func: Function, limit: number) {
 // Função de debounce
 function debounce(func: Function, delay: number) {
   let timer: number;
-
   return function (...args: any[]) {
     const context = this;
     clearTimeout(timer);
@@ -48,8 +46,10 @@ if (canvasContainer) {
     height: window.innerHeight,
   });
 
-  const layer = new Konva.Layer();
-  stage.add(layer);
+  const staticLayer = new Konva.Layer(); // Camada para elementos estáticos
+  const dynamicLayer = new Konva.Layer(); // Camada para elementos dinâmicos
+  stage.add(staticLayer);
+  stage.add(dynamicLayer);
 
   const square = new Konva.Rect({
     x: stage.width() / 2 - 50,
@@ -60,8 +60,13 @@ if (canvasContainer) {
     draggable: true,
   });
 
-  layer.add(square);
-  layer.draw();
+  dynamicLayer.add(square);
+  dynamicLayer.draw();
+
+  // Limita re-renderizações ao arrastar
+  square.on('dragmove', throttle(() => {
+    dynamicLayer.batchDraw();
+  }, 16)); // Atualiza apenas a camada dinâmica
 
   // Função de Zoom e Pan com throttle aplicado
   const scaleBy = 1.02;
@@ -93,7 +98,7 @@ if (canvasContainer) {
 
     stage.position(newPos);
     stage.batchDraw();
-  }, 16); // Aplica throttle com limite de 60fps
+  }, 16); // Aplica throttle com limite de 16ms
 
   stage.on('wheel', handleZoom);
 
@@ -101,7 +106,14 @@ if (canvasContainer) {
   const handleResize = debounce(() => {
     stage.width(window.innerWidth);
     stage.height(window.innerHeight);
+    staticLayer.batchDraw();
+    dynamicLayer.batchDraw();
   }, 100); // Aplica debounce com atraso de 100ms
 
   window.addEventListener('resize', handleResize);
+
+  // Evento para evitar re-renderizações desnecessárias
+  stage.on('dragstart dragend', () => {
+    dynamicLayer.batchDraw();
+  });
 }
