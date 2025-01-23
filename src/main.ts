@@ -2,9 +2,7 @@ import './style.css';
 import Konva from 'konva';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <main class="w-screen h-screen bg-white">
     <div id="umlCanvas" class="w-full h-full"></div>
-  </main>
 `;
 
 function throttle(func: Function, limit: number) {
