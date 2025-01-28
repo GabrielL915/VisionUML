@@ -12,9 +12,27 @@ if (!appContainer) {
 }
 
 appContainer.innerHTML = `
-  <main class="w-screen h-screen bg-white">
+  <div class="w-screen h-screen bg-white relative">
     <div id="umlCanvas" class="w-full h-full"></div>
-  </main>
+    
+    <div class="fixed bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+      <div class="bg-blue-500 rounded-lg shadow-lg p-4 flex space-x-4 items-center pointer-events-auto">
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">
+          Teste
+        </button>
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">
+          Teste
+        </button>
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">
+          Teste
+        </button>
+        <div class="h-6 w-px bg-blue-300"></div>
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">
+          Oi
+        </button>
+      </div>
+    </div>
+  </div>
 `;
 
 function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
