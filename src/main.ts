@@ -4,7 +4,6 @@ import Konva from 'konva';
 const ZOOM_SCALE_BY = 1.02;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
-const THROTTLE_LIMIT_MS = 16;
 const DEBOUNCE_DELAY_MS = 100;
 
 const appContainer = document.querySelector<HTMLDivElement>('#app');
@@ -18,28 +17,6 @@ appContainer.innerHTML = `
   </main>
 `;
 
-// Throttle function
-function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
-  let lastFunc: number;
-  let lastRan: number;
-  return function (this: any, ...args: Parameters<T>) {
-    const context = this;
-    if (!lastRan) {
-      func.apply(context, args);
-      lastRan = Date.now();
-    } else {
-      clearTimeout(lastFunc);
-      lastFunc = window.setTimeout(() => {
-        if (Date.now() - lastRan >= limit) {
-          func.apply(context, args);
-          lastRan = Date.now();
-        }
-      }, limit - (Date.now() - lastRan));
-    }
-  } as T;
-}
-
-// Debounce function
 function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
   let timer: number;
   return function (this: any, ...args: Parameters<T>) {
@@ -49,7 +26,6 @@ function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T
   } as T;
 }
 
-// Initialize Konva stage and layers
 const canvasContainer = document.getElementById('umlCanvas');
 if (!canvasContainer) {
   throw new Error('Canvas container not found');
@@ -61,8 +37,8 @@ const stage = new Konva.Stage({
   height: window.innerHeight,
 });
 
-const staticLayer = new Konva.Layer(); // Layer for static elements
-const dynamicLayer = new Konva.Layer(); // Layer for dynamic elements
+const staticLayer = new Konva.Layer();
+const dynamicLayer = new Konva.Layer();
 stage.add(staticLayer);
 stage.add(dynamicLayer);
 
@@ -78,15 +54,28 @@ const square = new Konva.Rect({
 dynamicLayer.add(square);
 dynamicLayer.draw();
 
-// Throttled drag move handler
-square.on('dragmove', throttle(() => {
+//requestAnimationFrame for smoother updates
+let isDragging = false;
+
+stage.on('dragstart', () => {
+  isDragging = true;
+});
+
+stage.on('dragend', () => {
+  isDragging = false;
   dynamicLayer.batchDraw();
-}, THROTTLE_LIMIT_MS));
+});
+
+stage.on('dragmove', () => {
+  if (isDragging) {
+    requestAnimationFrame(() => dynamicLayer.batchDraw());
+  }
+});
 
 // Zoom and Pan functionality
 let scale = 1;
 
-const handleZoom = throttle((e: Konva.KonvaEventObject<WheelEvent>) => {
+stage.on('wheel', (e) => {
   e.evt.preventDefault();
 
   const oldScale = scale;
@@ -111,9 +100,8 @@ const handleZoom = throttle((e: Konva.KonvaEventObject<WheelEvent>) => {
   };
 
   stage.position(newPos);
-  stage.batchDraw();
 
-  // Lazy rendering: only process visible objects
+  // Lazy rendering
   const visibleRect = {
     x: -newPos.x / scale,
     y: -newPos.y / scale,
@@ -133,9 +121,7 @@ const handleZoom = throttle((e: Konva.KonvaEventObject<WheelEvent>) => {
   });
 
   dynamicLayer.batchDraw();
-}, THROTTLE_LIMIT_MS);
-
-stage.on('wheel', handleZoom);
+});
 
 // Debounced window resize handler
 const handleResize = debounce(() => {
@@ -146,8 +132,3 @@ const handleResize = debounce(() => {
 }, DEBOUNCE_DELAY_MS);
 
 window.addEventListener('resize', handleResize);
-
-// Prevent unnecessary re-renders during drag events
-stage.on('dragstart dragend', () => {
-  dynamicLayer.batchDraw();
-});
