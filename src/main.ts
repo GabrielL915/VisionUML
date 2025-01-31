@@ -1,75 +1,48 @@
 import "./style.css";
 import Konva from "konva";
 
+// Constants
 const ZOOM_BUTTON_SCALE = 1.1;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 const DEBOUNCE_DELAY_MS = 100;
 
+// DOM Elements
 const appContainer = document.querySelector<HTMLDivElement>("#app");
-if (!appContainer) {
-  throw new Error("App container not found");
-}
+if (!appContainer) throw new Error("App container not found");
 
 appContainer.innerHTML = `
   <div class="w-screen h-screen bg-white relative">
-  <div id="umlCanvas" class="w-full h-full"></div>
-
-  <div
-    class="fixed bottom-4 left-0 right-0 flex justify-center pointer-events-none"
-  >
-    <div
-      class="absolute left-4 bottom-0 bg-white rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto"
-    >
-      <button id="zoomOut" class="px-3 py-1 hover:bg-gray-100 rounded">
-        -
-      </button>
-      <span id="zoomLevel" class="text-sm w-12 text-center">100%</span>
-      <button id="zoomIn" class="px-3 py-1 hover:bg-gray-100 rounded">+</button>
-    </div>
-
-    <div
-      class="bg-white rounded-lg shadow-lg p-4 flex space-x-4 items-center pointer-events-auto"
-    >
-      <button
-        id="useCaseButton"
-        class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors"
-      >
-        UseCase
-      </button>
-      <button
-        class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors"
-      >
-        Teste
-      </button>
-      <button
-        class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors"
-      >
-        Teste
-      </button>
-      <div class="h-6 w-px bg-blue-300"></div>
-      <button
-        class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors"
-      >
-        Oi
-      </button>
+    <div id="umlCanvas" class="w-full h-full"></div>
+    <div class="fixed bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+      <!-- Zoom Controls -->
+      <div class="absolute left-4 bottom-0 bg-white rounded-lg shadow-lg p-2 flex items-center gap-2 pointer-events-auto">
+        <button id="zoomOut" class="px-3 py-1 hover:bg-gray-100 rounded">-</button>
+        <span id="zoomLevel" class="text-sm w-12 text-center">100%</span>
+        <button id="zoomIn" class="px-3 py-1 hover:bg-gray-100 rounded">+</button>
+      </div>
+      <!-- Toolbar -->
+      <div class="bg-white rounded-lg shadow-lg p-4 flex space-x-4 items-center pointer-events-auto">
+        <button id="useCaseButton" class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">UseCase</button>
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">Teste</button>
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">Teste</button>
+        <div class="h-6 w-px bg-blue-300"></div>
+        <button class="px-4 py-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition-colors">Oi</button>
+      </div>
     </div>
   </div>
-</div>
 `;
 
-function debounce<T extends (...args: any[]) => void>(
-  func: T,
-  delay: number
-): T {
+// Utility: Debounce function
+function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
   let timer: number;
   return function (this: any, ...args: Parameters<T>) {
-    const context = this;
     clearTimeout(timer);
-    timer = window.setTimeout(() => func.apply(context, args), delay);
+    timer = window.setTimeout(() => func.apply(this, args), delay);
   } as T;
 }
 
+// Konva Stage Setup
 const stage = new Konva.Stage({
   container: "umlCanvas",
   width: window.innerWidth,
@@ -78,10 +51,9 @@ const stage = new Konva.Stage({
 
 const staticLayer = new Konva.Layer();
 const dynamicLayer = new Konva.Layer();
-stage.add(staticLayer);
-stage.add(dynamicLayer);
+stage.add(staticLayer, dynamicLayer);
 
-// Initial square
+// Initial Square
 const square = new Konva.Rect({
   x: stage.width() / 2 - 50,
   y: stage.height() / 2 - 50,
@@ -93,7 +65,7 @@ const square = new Konva.Rect({
 dynamicLayer.add(square);
 dynamicLayer.draw();
 
-// Zoom functionality
+// Zoom Functionality
 let scale = 1;
 
 function updateZoom(direction: number, pointer?: { x: number; y: number }) {
@@ -101,24 +73,17 @@ function updateZoom(direction: number, pointer?: { x: number; y: number }) {
   const zoomAmount = direction > 0 ? ZOOM_BUTTON_SCALE : 1 / ZOOM_BUTTON_SCALE;
   scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale * zoomAmount));
 
-  const zoomCenter = pointer || {
-    x: stage.width() / 2,
-    y: stage.height() / 2,
-  };
-
+  const zoomCenter = pointer || { x: stage.width() / 2, y: stage.height() / 2 };
   const mousePointTo = {
     x: (zoomCenter.x - stage.x()) / oldScale,
     y: (zoomCenter.y - stage.y()) / oldScale,
   };
 
   stage.scale({ x: scale, y: scale });
-
-  const newPos = {
+  stage.position({
     x: zoomCenter.x - mousePointTo.x * scale,
     y: zoomCenter.y - mousePointTo.y * scale,
-  };
-
-  stage.position(newPos);
+  });
 
   // Update zoom percentage display
   const zoomDisplay = document.getElementById("zoomLevel")!;
@@ -126,8 +91,8 @@ function updateZoom(direction: number, pointer?: { x: number; y: number }) {
 
   // Update visibility
   const visibleRect = {
-    x: -newPos.x / scale,
-    y: -newPos.y / scale,
+    x: -stage.x() / scale,
+    y: -stage.y() / scale,
     width: stage.width() / scale,
     height: stage.height() / scale,
   };
@@ -145,7 +110,7 @@ function updateZoom(direction: number, pointer?: { x: number; y: number }) {
   dynamicLayer.batchDraw();
 }
 
-// Event handlers
+// Event Listeners
 stage.on("wheel", (e) => {
   e.evt.preventDefault();
   const pointer = stage.getPointerPosition();
@@ -154,35 +119,45 @@ stage.on("wheel", (e) => {
   updateZoom(direction, pointer);
 });
 
-document
-  .getElementById("zoomIn")
-  ?.addEventListener("click", () => updateZoom(1));
-document
-  .getElementById("zoomOut")
-  ?.addEventListener("click", () => updateZoom(-1));
+document.getElementById("zoomIn")?.addEventListener("click", () => updateZoom(1));
+document.getElementById("zoomOut")?.addEventListener("click", () => updateZoom(-1));
 
-// UseCase element functionality
-function addUseCase() {
-  Konva.Image.fromURL("/usecase.svg", (image) => {
-    image.setAttrs({
-      x: stage.width() / 2 - 50,
-      y: stage.height() / 2 - 50,
-      width: 143,
-      height: 89,
+// UseCase Element Functionality
+async function addUseCase() {
+  try {
+    const svgText = await fetch("/usecase.svg").then((res) => res.text());
+    const pathData = extractPathData(svgText);
+
+    const useCase = new Konva.Path({
+      data: pathData,
+      fill: "purple",
+      stroke: "black",
+      strokeWidth: 2,
+      x: stage.width() / 2 - 71.5,
+      y: stage.height() / 2 - 44.5,
       draggable: true,
     });
-    dynamicLayer.add(image);
+
+    dynamicLayer.add(useCase);
     dynamicLayer.draw();
-  });
+  } catch (error) {
+    console.error("Failed to load UseCase SVG:", error);
+  }
+}
+
+function extractPathData(svgText: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgText, "image/svg+xml");
+  const pathElement = doc.querySelector("path");
+  return pathElement?.getAttribute("d") || "";
 }
 
 document.getElementById("useCaseButton")?.addEventListener("click", addUseCase);
 
-// Drag handling
+// Drag Handling
 let isDragging = false;
-stage.on("dragstart", () => {
-  isDragging = true;
-});
+
+stage.on("dragstart", () => (isDragging = true));
 stage.on("dragend", () => {
   isDragging = false;
   dynamicLayer.batchDraw();
@@ -191,11 +166,12 @@ stage.on("dragmove", () => {
   if (isDragging) requestAnimationFrame(() => dynamicLayer.batchDraw());
 });
 
-// Window resize handler
+// Window Resize Handler
 const handleResize = debounce(() => {
   stage.width(window.innerWidth);
   stage.height(window.innerHeight);
   staticLayer.batchDraw();
   dynamicLayer.batchDraw();
 }, DEBOUNCE_DELAY_MS);
+
 window.addEventListener("resize", handleResize);
