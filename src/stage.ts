@@ -1,10 +1,16 @@
 import Konva from "konva";
 import { debounce } from "./utils/debounce";
 
-export const ZOOM_BUTTON_SCALE = 1.1;
-export const MIN_ZOOM = 0.5;
-export const MAX_ZOOM = 3;
-export const DEBOUNCE_DELAY_MS = 100;
+export const DEFAULT_CONFIGS = {
+  ZOOM_BUTTON_SCALE: 1.1,
+  MIN_ZOOM: 0.5,
+  MAX_ZOOM: 3,
+  DEBOUNCE_DELAY_MS: 100
+} as const;
+
+type ObjectValues<T> = T[keyof T];
+
+export type Configs = ObjectValues<typeof DEFAULT_CONFIGS>;
 
 export let stage: Konva.Stage;
 export let staticLayer: Konva.Layer;
@@ -64,14 +70,14 @@ export function initializeStage() {
       stage.height(window.innerHeight);
       staticLayer.batchDraw();
       dynamicLayer.batchDraw();
-    }, DEBOUNCE_DELAY_MS)
+    }, DEFAULT_CONFIGS.DEBOUNCE_DELAY_MS)
   );
 }
 
 export function updateZoom(direction: number, pointer?: { x: number; y: number }) {
   const oldScale = scale;
-  const zoomAmount = direction > 0 ? ZOOM_BUTTON_SCALE : 1 / ZOOM_BUTTON_SCALE;
-  scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale * zoomAmount));
+  const zoomAmount = direction > 0 ? DEFAULT_CONFIGS.ZOOM_BUTTON_SCALE : 1 / DEFAULT_CONFIGS.ZOOM_BUTTON_SCALE;
+  scale = Math.max(DEFAULT_CONFIGS.MIN_ZOOM, Math.min(DEFAULT_CONFIGS.MAX_ZOOM, scale * zoomAmount));
 
   const zoomCenter = pointer || { x: stage.width() / 2, y: stage.height() / 2 };
   const mousePointTo = {
