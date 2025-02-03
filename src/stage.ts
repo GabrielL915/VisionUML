@@ -41,16 +41,17 @@ export function initializeStage() {
     updateZoom(direction, pointer);
   });
 
-  (window as any).isDragging = false;
-  
-  stage.on("dragstart", () => ((window as any).isDragging = true));
+  let isDragging = false;
+
+  stage.on("dragstart", () => isDragging = true);
+
   stage.on("dragend", () => {
-    (window as any).isDragging = false;
+    isDragging = false;
     dynamicLayer.batchDraw();
   });
-  
+
   stage.on("dragmove", () => {
-    if ((window as any).isDragging) {
+    if (isDragging) {
       requestAnimationFrame(() => dynamicLayer.batchDraw());
     }
   });
