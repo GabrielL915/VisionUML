@@ -1,7 +1,7 @@
 import Konva from "konva";
 import { debounce } from "./utils/debounce";
 
-export const DEFAULT_CONFIGS = {
+const DEFAULT_CONFIGS = {
   ZOOM_BUTTON_SCALE: 1.1,
   MIN_ZOOM: 0.5,
   MAX_ZOOM: 3,
