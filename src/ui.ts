@@ -6,6 +6,7 @@ export function initializeUI() {
   const appContainer = document.querySelector<HTMLDivElement>("#app");
   if (!appContainer) throw new Error("App container not found");
 
+  // Tela de Boas-vindas inicial
   appContainer.innerHTML = `
     <div class="w-screen h-screen bg-white flex flex-col items-center justify-center">
       <div class="text-center mb-8">
